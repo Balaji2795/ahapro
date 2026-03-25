@@ -2,39 +2,42 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "aha-html-app"
-        CONTAINER_NAME = "aha-container"
+        DOCKER_IMAGE = "your-dockerhub-username/aha-app"
+        TAG = "latest"
     }
 
     stages {
-        stage('Checkout') {
+
+        stage('Clone Repo') {
             steps {
-                checkout scm
+                git 'https://github.com/your-repo/aha-app.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t $IMAGE_NAME ."
+                sh 'docker build -t $DOCKER_IMAGE:$TAG .'
+            }
+        }
+
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub-password', variable: 'PASS')]) {
+                    sh 'echo $PASS | docker login -u your-dockerhub-username --password-stdin'
                 }
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Push Image') {
             steps {
-                script {
-                    sh "docker stop $CONTAINER_NAME || true"
-                    sh "docker rm $CONTAINER_NAME || true"
-                }
+                sh 'docker push $DOCKER_IMAGE:$TAG'
             }
         }
 
-        stage('Run Container') {
+        stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh "docker run -d -p 8080:80 --name $CONTAINER_NAME $IMAGE_NAME"
-                }
+                sh 'kubectl apply -f k8s-deployment.yaml'
+                sh 'kubectl apply -f k8s-service.yaml'
             }
         }
     }
