@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aha-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aha-app
+  template:
+    metadata:
+      labels:
+        app: aha-app
+    spec:
+      containers:
+      - name: aha-container
+        image: aha-html-app:latest
+        ports:
+        - containerPort: 80
